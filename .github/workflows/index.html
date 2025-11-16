@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BloxMulti</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%);
+            color: white;
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Grain texture */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            background-repeat: repeat;
+            background-size: 128px 128px;
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Animated background blobs */
+        .bg-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.15;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .blob-1 {
+            width: 400px;
+            height: 400px;
+            background: #3b82f6;
+            top: 10%;
+            left: 10%;
+        }
+
+        .blob-2 {
+            width: 400px;
+            height: 400px;
+            background: #6366f1;
+            bottom: 10%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(30px, 30px); }
+        }
+
+        /* Custom titlebar */
+        .titlebar {
+            height: 35px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(100, 116, 139, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            -webkit-app-region: drag;
+            position: relative;
+            z-index: 1000;
+        }
+
+        .titlebar-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .titlebar-controls {
+            display: flex;
+            gap: 10px;
+            -webkit-app-region: no-drag;
+        }
+
+        .titlebar-btn {
+            width: 30px;
+            height: 25px;
+            border: none;
+            background: transparent;
+            color: white;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .titlebar-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .titlebar-btn.close:hover {
+            background: #ef4444;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 30px;
+            height: calc(100vh - 35px);
+            overflow-y: auto;
+        }
+
+        .main-card {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(100, 116, 139, 0.5);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 42px;
+            font-weight: 700;
+            letter-spacing: -1px;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: rgba(147, 197, 253, 0.8);
+            font-size: 14px;
+        }
+
+        .counter {
+            background: rgba(37, 99, 235, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 15px 25px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .counter-label {
+            color: #93c5fd;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .counter-value {
+            font-size: 36px;
+            font-weight: 700;
+        }
+
+        .launch-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+            border: none;
+            color: white;
+            padding: 18px;
+            border-radius: 14px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .launch-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 15px 40px rgba(37, 99, 235, 0.4);
+        }
+
+        .launch-btn:active {
+            transform: scale(0.98);
+        }
+
+        .instances-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .instance-item {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(100, 116, 139, 0.5);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .instance-item:hover {
+            background: rgba(30, 41, 59, 0.8);
+        }
+
+        .instance-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            background: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .instance-details h3 {
+            font-size: 16px;
+            margin-bottom: 3px;
+        }
+
+        .instance-time {
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        .kill-btn {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .kill-btn:hover {
+            background: rgba(239, 68, 68, 0.4);
+            color: #fee2e2;
+        }
+
+        .kill-all-btn {
+            width: 100%;
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 14px;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .kill-all-btn:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(100, 116, 139, 0.5);
+            text-align: right;
+        }
+
+        .footer-text {
+            color: #64748b;
+            font-size: 11px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(30, 41, 59, 0.3);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(59, 130, 246, 0.5);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(59, 130, 246, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-blob blob-1"></div>
+    <div class="bg-blob blob-2"></div>
+
+    <div class="titlebar">
+        <div class="titlebar-title">BloxMulti</div>
+        <div class="titlebar-controls">
+            <button class="titlebar-btn" id="minimize-btn">─</button>
+            <button class="titlebar-btn close" id="close-btn">✕</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="main-card">
+            <div class="header">
+                <div>
+                    <h1>BloxMulti</h1>
+                    <p class="subtitle">Launch multiple Roblox instances</p>
+                </div>
+                <div class="counter">
+                    <div class="counter-label">Instances</div>
+                    <div class="counter-value" id="instance-count">0</div>
+                </div>
+            </div>
+
+            <button class="launch-btn" id="launch-btn">
+                <span style="font-size: 24px">+</span>
+                Launch New Instance
+            </button>
+
+            <div class="instances-list" id="instances-list"></div>
+
+            <button class="kill-all-btn hidden" id="kill-all-btn">
+                <span>⏻</span>
+                Kill All Instances
+            </button>
+
+            <div class="footer">
+                <p class="footer-text">by aspct7</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        let instances = [];
+        let updateInterval;
+
+        // Window controls
+        document.getElementById('minimize-btn').addEventListener('click', () => {
+            ipcRenderer.send('minimize-window');
+        });
+
+        document.getElementById('close-btn').addEventListener('click', () => {
+            ipcRenderer.send('close-window');
+        });
+
+        // Launch instance
+        document.getElementById('launch-btn').addEventListener('click', async () => {
+            const result = await ipcRenderer.invoke('launch-instance');
+            
+            if (result.success) {
+                instances.push({
+                    id: result.instanceId,
+                    pid: result.pid,
+                    startTime: Date.now()
+                });
+                updateUI();
+            } else {
+                alert('Error: ' + result.error);
+            }
+        });
+
+        // Kill specific instance
+        async function killInstance(pid) {
+            const result = await ipcRenderer.invoke('kill-instance', pid);
+            if (result.success) {
+                instances = instances.filter(inst => inst.pid !== pid);
+                updateUI();
+            }
+        }
+
+        // Kill all instances
+        document.getElementById('kill-all-btn').addEventListener('click', async () => {
+            const result = await ipcRenderer.invoke('kill-all-instances');
+            if (result.success) {
+                instances = [];
+                updateUI();
+            }
+        });
+
+        // Format elapsed time
+        function getElapsedTime(startTime) {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // Update UI
+        function updateUI() {
+            const count = instances.length;
+            document.getElementById('instance-count').textContent = count;
+            
+            const listEl = document.getElementById('instances-list');
+            const killAllBtn = document.getElementById('kill-all-btn');
+            
+            if (count === 0) {
+                listEl.innerHTML = '';
+                killAllBtn.classList.add('hidden');
+            } else {
+                killAllBtn.classList.remove('hidden');
+                
+                listEl.innerHTML = instances.map((inst, index) => `
+                    <div class="instance-item">
+                        <div class="instance-info">
+                            <div class="status-dot"></div>
+                            <div class="instance-details">
+                                <h3>Instance #${index + 1}</h3>
+                                <p class="instance-time">${getElapsedTime(inst.startTime)}</p>
+                            </div>
+                        </div>
+                        <button class="kill-btn" onclick="killInstance(${inst.pid})">Kill</button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Update times every second
+        updateInterval = setInterval(() => {
+            if (instances.length > 0) {
+                updateUI();
+            }
+        }, 1000);
+
+        // Initial UI update
+        updateUI();
+    </script>
+</body>
+</html>

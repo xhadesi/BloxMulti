@@ -1,0 +1,38 @@
+# Node modules
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Build outputs
+dist
+build
+out
+
+# Electron
+.log
+.DS_Store
+
+# IDE
+.vscode
+.idea
+.swp
+.swo
+~
+
+# OS
+Thumbs.db
+desktop.ini
+
+# Package locks (keep package.json only)
+package-lock.json
+yarn.lock
+
+# Compiled C++
+resources.exe
+.o
+.obj
+
+# Temporary files
+.tmp
+.temp
