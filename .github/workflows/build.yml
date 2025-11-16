@@ -1,0 +1,77 @@
+name: Build BloxMulti
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v3
+    
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: 🔧 Setup MinGW
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: >-
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-toolchain
+    
+    - name: 📦 Install dependencies
+      run: npm install
+    
+    - name: 🛠️ Compile mutex_killer.exe
+      shell: msys2 {0}
+      run: |
+        cd resources
+        g++ mutex_killer.cpp -o mutex_killer.exe -lshlwapi -static -static-libgcc -static-libstdc++ -mwindows
+        ls -la mutex_killer.exe
+    
+    - name: ✅ Verify mutex_killer.exe exists
+      run: |
+        if (Test-Path "resources/mutex_killer.exe") {
+          Write-Host "✅ mutex_killer.exe compiled successfully!"
+        } else {
+          Write-Host "❌ mutex_killer.exe not found!"
+          exit 1
+        }
+      shell: pwsh
+    
+    - name: 🏗️ Build Electron app
+      run: npm run build
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: 📊 List build artifacts
+      run: |
+        Write-Host "📁 Contents of dist folder:"
+        Get-ChildItem -Path dist -Recurse | Select-Object FullName
+      shell: pwsh
+    
+    - name: 📤 Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: BloxMulti-Windows
+        path: |
+          dist/*.exe
+          dist/*.zip
+        retention-days: 30
+    
+    - name: 🎉 Build complete
+      run: |
+        Write-Host "🎉 Build completed successfully!"
+        Write-Host "📥 Download your .exe from the Artifacts section above!"
+      shell: pwsh
